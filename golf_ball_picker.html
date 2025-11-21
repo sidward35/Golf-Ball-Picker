@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golf Ball Picker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        input[type="range"] {
+            pointer-events: auto;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #16a34a;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            pointer-events: auto;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #16a34a;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            pointer-events: auto;
+        }
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+        .sortable:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        .dark .sortable:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center">
+            <div class="text-center">
+                <div class="text-6xl mb-4">⛳</div>
+                <div class="text-xl text-gray-600">Loading golf ball data...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const csvData = `brand,model,pricePerDozen,construction,cover,compression,spinLevel,feel,swingSpeed,handicap,bestFor,sliceFriendly
+Titleist,Pro V1,54.99,3-piece,Urethane,87,High,Soft,Medium|High|Very High,Low|Mid,Tour performance|Control|Greenside spin,false
+Titleist,Pro V1x,54.99,4-piece,Urethane,98,High,Firm,High|Very High,Low|Mid,Tour performance|High flight|Maximum spin,false
+Titleist,Tour Soft,39.99,2-piece,Ionomer,70,Medium,Soft,Low|Medium|High,Mid|High,Soft feel|All-around performance|Value,true
+Titleist,TruFeel,24.99,2-piece,Ionomer,68,Low,Very Soft,Low|Medium,Mid|High,Ultra-soft feel|Distance|Value,true
+Titleist,Velocity,29.99,2-piece,Ionomer,70,Low,Firm,Low|Medium|High,Mid|High,Distance|Maximum ball speed|High launch,true
+Titleist,AVX,49.99,3-piece,Urethane,77,Medium,Very Soft,Medium|High,Low|Mid,Low flight|Low spin|Soft feel,false
+Callaway,Chrome Soft,54.99,3-piece,Urethane,75,Medium-High,Very Soft,Medium|High,Low|Mid,Soft feel|Control|Consistency,false
+Callaway,Chrome Soft X,54.99,4-piece,Urethane,98,High,Firm,High|Very High,Low|Mid,Tour performance|Workability|Maximum spin,false
+Callaway,Supersoft,22.99,2-piece,Ionomer,38,Low,Very Soft,Low|Medium,Mid|High,Distance|Ultra-soft feel|Forgiveness,true
+Callaway,Supersoft MAX,22.99,2-piece,Ionomer,30,Low,Very Soft,Low|Medium,High,Distance|Oversized design|Confidence|Value,true
+Callaway,ERC Soft,39.99,3-piece,Hybrid,72,Medium,Soft,Medium|High,Mid|High,Distance|Soft feel|Greenside control|Value,true
+Callaway,Warbird,19.99,2-piece,Ionomer,90,Low,Firm,Medium|High,Mid|High,Distance|Value|Ball speed,true
+TaylorMade,TP5,54.99,5-piece,Urethane,88,High,Soft,Medium|High|Very High,Low|Mid,Tour performance|Greenside spin|Control,false
+TaylorMade,TP5x,54.99,5-piece,Urethane,97,Medium-High,Medium,High|Very High,Low|Mid,Distance|Tour performance|Low driver spin,false
+TaylorMade,Tour Response,34.99,3-piece,Urethane,70,Medium-High,Soft,Low|Medium|High,Mid|High,Value|Greenside control|Distance,false
+TaylorMade,Distance+,24.99,2-piece,Ionomer,77,Low,Soft,Low|Medium,Mid|High,Distance|Value|Forgiveness,true
+TaylorMade,SpeedSoft,24.99,2-piece,Ionomer,40,Low,Very Soft,Low|Medium,Mid|High,Value|Soft feel|Distance,true
+Bridgestone,Tour B X,49.99,3-piece,Urethane,98,Medium-High,Firm,Very High,Low,Distance|Tour performance|Low spin,false
+Bridgestone,Tour B XS,49.99,3-piece,Urethane,86,High,Soft,Very High,Low|Mid,Tour performance|Greenside spin|Control,false
+Bridgestone,Tour B RX,49.99,3-piece,Urethane,75,Medium-High,Soft,High,Low|Mid,Distance|Tour performance|Forgiveness,false
+Bridgestone,Tour B RXS,49.99,3-piece,Urethane,68,High,Soft,High,Low|Mid|High,Tour performance|Greenside spin|Control,false
+Bridgestone,e6,24.99,2-piece,Surlyn,44,Low,Very Soft,Low|Medium,Mid|High,Distance|Soft feel|Value,true
+Bridgestone,e12 Contact,34.99,3-piece,Ionomer,61,Medium,Soft,Low|Medium|High,Mid|High,Distance|Straight flight|Value,true
+Bridgestone,e12 Soft,29.99,3-piece,Surlyn,50,Medium,Soft,Low|Medium,Mid|High,Distance|Soft feel|Straight flight,true
+Srixon,Z-Star,49.99,3-piece,Urethane,85,High,Very Soft,Medium|High,Low|Mid,Tour performance|Soft feel|Greenside spin,false
+Srixon,Z-Star XV,49.99,3-piece,Urethane,95,High,Medium,High|Very High,Low|Mid,Tour performance|Distance|High ball speed,false
+Srixon,Z-Star Diamond,49.99,3-piece,Urethane,102,High,Soft,High|Very High,Low,Tour performance|All conditions|Maximum spin,false
+Srixon,Q-Star Tour,39.99,3-piece,Urethane,74,Medium-High,Soft,Medium,Mid|High,Tour performance|Moderate swing speeds|Value,false
+Srixon,Soft Feel,22.99,2-piece,Ionomer,60,Low,Very Soft,Low|Medium,Mid|High,Soft feel|Distance|Value,true
+Srixon,Distance,19.99,2-piece,Ionomer,89,Low,Firm,Medium|High,Mid|High,Maximum distance|Durability|Value,true
+Srixon,AD333,29.99,2-piece,Ionomer,70,Medium,Soft,Medium,Mid|High,Distance|Feel|Control|Value,true
+Wilson,Staff Model,49.99,4-piece,Urethane,90,High,Medium,High|Very High,Low|Mid,Tour performance|Ball speed|Distance,false
+Wilson,Staff Model R,44.99,4-piece,Urethane,90,High,Medium,High|Very High,Low|Mid,Tour performance|Aerodynamic consistency|Raw cover,false
+Wilson,Duo Soft,19.99,2-piece,Ionomer,37,Low,Very Soft,Low|Medium,Mid|High,Soft feel|Distance|Straightness,true
+Wilson,Duo Professional,34.99,3-piece,Urethane,60,Medium-High,Soft,Medium,Mid|High,Soft feel|Greenside spin|Tour urethane cover,false
+Wilson,Duo Optix,22.99,2-piece,Ionomer,29,Low,Very Soft,Low|Medium,Mid|High,High visibility|Soft feel|Distance,true
+Kirkland Signature,Performance Plus V3.0,17.50,3-piece,Urethane,93,High,Medium,Medium|High,Low|Mid|High,Value|High Spin|Greenside Control,false
+Vice,Pro Plus,40.00,4-piece,Urethane,100,High,Firm,High|Very High,Low|Mid,Performance|Control|Distance,false
+Vice,Pro,40.00,3-piece,Urethane,90,Medium-High,Soft,Medium|High,Low|Mid,Balanced Performance|Control|Feel,false
+Vice,Pro Air,40.00,3-piece,Urethane,75,Medium,Soft,Low|Medium|High,Mid|High,High Launch|Distance|Moderate Swing Speed,true
+Vice,Tour,28.00,3-piece,Ionomer,90,Medium,Firm,Medium|High,Mid|High,Distance|Value|Durability,true
+Vice,Drive,18.00,2-piece,Ionomer,95,Low,Firm,Low|Medium|High,Mid|High,Budget-friendly|Distance|Durability,true
+Maxfli,Tour X,40.00,4-piece,Urethane,100,High,Firm,High|Very High,Low|Mid,Distance|Performance|Value,false
+Maxfli,Tour,40.00,3-piece,Urethane,85,Medium-High,Medium,Medium|High,Low|Mid|High,Value|Performance|Balanced,false
+Maxfli,Tour S,40.00,3-piece,Urethane,82,Medium,Soft,Medium|High,Low|Mid|High,Soft Feel|Value|Control,false
+Maxfli,SoftFli,25.00,2-piece,Ionomer,35,Low,Very Soft,Low|Medium,Mid|High,Soft Feel|Budget-friendly|Distance,true
+Maxfli,StraightFli,25.00,2-piece,Ionomer,75,Low,Firm,Low|Medium|High,Mid|High,Accuracy|Distance|Budget-friendly,true
+Noodle,Easy Distance,15.00,2-piece,Ionomer,50,Low,Soft,Low|Medium,Mid|High,Budget-friendly|Distance|Beginners,true
+Noodle,Long and Soft,15.00,2-piece,Ionomer,60,Low,Soft,Medium,Mid|High,Budget-friendly|Distance|Value,true
+Cut Golf,Cut Blue,25.00,4-piece,Urethane,90,Medium-High,Medium,Medium|High,Low|Mid,Value|Tour performance|Distance,false
+Cut Golf,Cut Grey,25.00,3-piece,Urethane,80,Medium,Soft,Low|Medium,Mid|High,Value|Moderate swing speeds|Accuracy,true
+Cut Golf,Cut Red,14.50,2-piece,Surlyn,60,Low,Very Soft,Low,High,Budget|Distance|Beginners,true
+Cut Golf,Cut Matte,21.50,3-piece,Ionomer,70,Low,Very Soft,Low|Medium,Mid|High,Budget|Distance|Visibility|Slice control,true
+Cut Golf,Cut DC,30.00,4-piece,Urethane,105,High,Firm,High|Very High,Low|Mid,Tour performance|Advanced players|Distance,false
+Pinnacle,Rush,16.00,2-piece,Ionomer,87,Low,Firm,Low|Medium|High,Mid|High,Distance|Value|Durability,true
+Pinnacle,Soft,16.00,2-piece,Ionomer,45,Low,Very Soft,Low|Medium,Mid|High,Distance|Soft feel|Value,true
+Pinnacle,Gold,22.50,2-piece,Ionomer,87,Low,Firm,Medium|High,Mid|High,Distance|Straight flight|Value,true
+Top Flite,Gamer,19.00,3-piece,Ionomer,87,Medium,Medium,Medium|High,Mid|High,Value|Balanced performance|Mid-handicap,false
+Top Flite,XL Distance,17.50,2-piece,Ionomer,90,Low,Firm,Medium|High,High,Distance|Durability|Budget,true
+Top Flite,Hammer Control,18.00,3-piece,Ionomer,82,Medium,Medium,Medium,Mid|High,Distance|Control|Value,false
+Top Flite,Bomb,30.00,2-piece,Ionomer,100,Low,Firm,High|Very High,Mid|High,Maximum distance|Long drive,false
+Mizuno,RB Tour,43.00,4-piece,Urethane,87,Medium,Soft,Medium|High,Low|Mid,Tour performance|Penetrating flight|Wind play,false
+Mizuno,RB Tour X,43.00,3-piece,Urethane,95,Medium-High,Medium,High|Very High,Low|Mid,Tour performance|Control|Higher spin,false
+OnCore,ELIXR,30.00,3-piece,Urethane,77,Medium-High,Soft,Medium|High,Mid|High,Value|Control|Feel,false
+OnCore,Vero X1,40.00,4-piece,Urethane,85,High,Medium,High|Very High,Low|Mid,Tour performance|Distance|Accuracy|Reduced sidespin,true
+Snell Golf,MTB Prime,33.00,3-piece,Urethane,77,High,Very Soft,Low|Medium|High,Mid|High,Soft feel|Value|Iron spin|Tour performance,false
+Snell Golf,MTB Prime X,33.00,3-piece,Urethane,87,Medium,Firm,Medium|High|Very High,Low|Mid,Tour performance|Value|Controlled spin|High flight,false
+Snell Golf,MTB Black,35.00,3-piece,Urethane,77,Medium,Soft,Medium|High,Mid|High,Value|Tour performance|Soft feel,false
+Snell Golf,MTB-X,35.00,3-piece,Urethane,87,Medium-High,Firm,High|Very High,Low|Mid,Tour performance|Value|Iron spin,false`;
+
+        let golfBalls = [];
+        let state = {
+            swingSpeed: '',
+            handicap: '',
+            hasSlice: false,
+            priceRange: [10, 60],
+            compressionRange: [30, 105],
+            sortColumn: null,
+            sortDirection: 'asc',
+            darkMode: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        };
+
+        // Parse CSV data
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            const headers = lines[0].split(',');
+            
+            return lines.slice(1).map(line => {
+                const values = line.split(',');
+                const ball = {};
+                
+                headers.forEach((header, index) => {
+                    let value = values[index];
+                    
+                    if (header === 'pricePerDozen' || header === 'compression') {
+                        ball[header] = parseInt(value);
+                    } else if (header === 'sliceFriendly') {
+                        ball[header] = value === 'true';
+                    } else if (header === 'swingSpeed' || header === 'handicap' || header === 'bestFor') {
+                        ball[header] = value.split('|');
+                    } else {
+                        ball[header] = value;
+                    }
+                });
+                
+                return ball;
+            });
+        }
+
+        // Initialize with embedded data
+        function initializeData() {
+            golfBalls = parseCSV(csvData);
+            
+            // Set compression range based on data
+            const compressions = golfBalls.map(b => b.compression);
+            const minComp = Math.min(...compressions);
+            const maxComp = Math.max(...compressions);
+            state.compressionRange = [minComp, maxComp];
+            
+            render();
+        }
+
+        function getSpinColor(spin, darkMode) {
+            if (darkMode) {
+                if (spin === "High") return "text-red-400";
+                if (spin === "Medium-High") return "text-orange-400";
+                if (spin === "Medium") return "text-yellow-400";
+                return "text-green-400";
+            }
+            if (spin === "High") return "text-red-600";
+            if (spin === "Medium-High") return "text-orange-600";
+            if (spin === "Medium") return "text-yellow-600";
+            return "text-green-600";
+        }
+
+        function filterBalls() {
+            return golfBalls.filter(ball => {
+                if (state.swingSpeed && !ball.swingSpeed.includes(state.swingSpeed)) return false;
+                if (state.handicap && !ball.handicap.includes(state.handicap)) return false;
+                if (state.hasSlice && !ball.sliceFriendly) return false;
+                if (ball.pricePerDozen < state.priceRange[0] || ball.pricePerDozen > state.priceRange[1]) return false;
+                if (ball.compression < state.compressionRange[0] || ball.compression > state.compressionRange[1]) return false;
+                return true;
+            });
+        }
+
+        function sortBalls(balls) {
+            if (!state.sortColumn) return balls;
+            
+            return [...balls].sort((a, b) => {
+                let aVal = a[state.sortColumn];
+                let bVal = b[state.sortColumn];
+                
+                // Handle arrays (like bestFor)
+                if (Array.isArray(aVal)) aVal = aVal.join(', ');
+                if (Array.isArray(bVal)) bVal = bVal.join(', ');
+                
+                // Handle numbers
+                if (typeof aVal === 'number' && typeof bVal === 'number') {
+                    return state.sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                }
+                
+                // Handle strings
+                aVal = String(aVal).toLowerCase();
+                bVal = String(bVal).toLowerCase();
+                
+                if (state.sortDirection === 'asc') {
+                    return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+                } else {
+                    return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+                }
+            });
+        }
+
+        function toggleSort(column) {
+            if (state.sortColumn === column) {
+                state.sortDirection = state.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                state.sortColumn = column;
+                state.sortDirection = 'asc';
+            }
+            render();
+        }
+
+        function render() {
+            const filteredBalls = sortBalls(filterBalls());
+            const { darkMode } = state;
+
+            const bgClass = darkMode 
+                ? "min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
+                : "min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50";
+
+            const cardBg = darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100";
+            const textPrimary = darkMode ? "text-white" : "text-gray-900";
+            const textSecondary = darkMode ? "text-gray-300" : "text-gray-600";
+            const textTertiary = darkMode ? "text-gray-400" : "text-gray-500";
+            const inputBg = darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300";
+            const tableBorder = darkMode ? "border-gray-700" : "border-gray-200";
+            const tableRowHover = darkMode ? "hover:bg-gray-700" : "hover:bg-gray-50";
+
+            const compressions = golfBalls.map(b => b.compression);
+            const minCompression = Math.min(...compressions);
+            const maxCompression = Math.max(...compressions);
+
+            const getSortIcon = (column) => {
+                if (state.sortColumn !== column) return '⇅';
+                return state.sortDirection === 'asc' ? '↑' : '↓';
+            };
+
+            const html = `
+                <div class="${bgClass}">
+                    <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+                        <div class="text-center mb-12">
+                            <div class="flex items-center justify-center gap-3 mb-4 relative">
+                                <span class="text-5xl">🎯</span>
+                                <h1 class="text-4xl font-bold ${textPrimary}">Golf Ball Picker</h1>
+                                
+                                <button id="theme-toggle" class="absolute right-0 p-2 rounded-lg transition-colors ${
+                                    darkMode 
+                                        ? "bg-gray-700 hover:bg-gray-600" 
+                                        : "bg-gray-100 hover:bg-gray-200"
+                                }" aria-label="Toggle theme">
+                                    <span class="text-2xl">${darkMode ? '☀️' : '🌙'}</span>
+                                </button>
+                            </div>
+                            <p class="text-lg ${textSecondary} max-w-2xl mx-auto">
+                                Find your perfect golf ball match based on your swing speed, skill level, and playing style
+                            </p>
+                        </div>
+
+                        <div class="${cardBg} rounded-2xl shadow-lg p-6 mb-8 border">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="block text-sm font-semibold ${textPrimary} mb-2">
+                                        Swing Speed
+                                    </label>
+                                    <select id="swing-speed" class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${inputBg}">
+                                        <option value="">Any</option>
+                                        <option value="Low" ${state.swingSpeed === 'Low' ? 'selected' : ''}>Low (&lt;85 mph)</option>
+                                        <option value="Medium" ${state.swingSpeed === 'Medium' ? 'selected' : ''}>Medium (85-95 mph)</option>
+                                        <option value="High" ${state.swingSpeed === 'High' ? 'selected' : ''}>High (95-110 mph)</option>
+                                        <option value="Very High" ${state.swingSpeed === 'Very High' ? 'selected' : ''}>Very High (110+ mph)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold ${textPrimary} mb-2">
+                                        Handicap Level
+                                    </label>
+                                    <select id="handicap" class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${inputBg}">
+                                        <option value="">Any</option>
+                                        <option value="Low" ${state.handicap === 'Low' ? 'selected' : ''}>Low (0-9)</option>
+                                        <option value="Mid" ${state.handicap === 'Mid' ? 'selected' : ''}>Mid (10-20)</option>
+                                        <option value="High" ${state.handicap === 'High' ? 'selected' : ''}>High (20+)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="block text-sm font-semibold ${textPrimary} mb-3">
+                                        Price Range: $${state.priceRange[0]} - $${state.priceRange[1]} per dozen
+                                    </label>
+                                    <div class="px-2">
+                                        <div class="relative">
+                                            <input type="range" id="price-min" min="10" max="60" value="${state.priceRange[0]}" class="absolute w-full h-2 bg-transparent appearance-none pointer-events-none z-20" style="background: transparent" />
+                                            <input type="range" id="price-max" min="10" max="60" value="${state.priceRange[1]}" class="absolute w-full h-2 bg-transparent appearance-none pointer-events-none z-20" style="background: transparent" />
+                                            <div class="relative h-2 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}">
+                                                <div class="absolute h-2 bg-green-500 rounded-full" style="left: ${((state.priceRange[0] - 10) / 50) * 100}%; right: ${100 - ((state.priceRange[1] - 10) / 50) * 100}%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="flex justify-between mt-2">
+                                            <span class="text-xs ${textTertiary}">$10</span>
+                                            <span class="text-xs ${textTertiary}">$60</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold ${textPrimary} mb-3">
+                                        Compression: ${state.compressionRange[0]} - ${state.compressionRange[1]}
+                                    </label>
+                                    <div class="px-2">
+                                        <div class="relative">
+                                            <input type="range" id="compression-min" min="${minCompression}" max="${maxCompression}" value="${state.compressionRange[0]}" class="absolute w-full h-2 bg-transparent appearance-none pointer-events-none z-20" style="background: transparent" />
+                                            <input type="range" id="compression-max" min="${minCompression}" max="${maxCompression}" value="${state.compressionRange[1]}" class="absolute w-full h-2 bg-transparent appearance-none pointer-events-none z-20" style="background: transparent" />
+                                            <div class="relative h-2 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}">
+                                                <div class="absolute h-2 bg-green-500 rounded-full" style="left: ${((state.compressionRange[0] - minCompression) / (maxCompression - minCompression)) * 100}%; right: ${100 - ((state.compressionRange[1] - minCompression) / (maxCompression - minCompression)) * 100}%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="flex justify-between mt-2">
+                                            <span class="text-xs ${textTertiary}">${minCompression}</span>
+                                            <span class="text-xs ${textTertiary}">${maxCompression}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap gap-4 pb-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}">
+                                <label class="flex items-center gap-2 cursor-pointer group">
+                                    <input type="checkbox" id="has-slice" ${state.hasSlice ? 'checked' : ''} class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500" />
+                                    <span class="text-sm font-medium ${textPrimary} group-hover:text-green-600">
+                                        I struggle with slices/hooks
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center justify-between mt-4">
+                                <div class="text-sm ${textSecondary}">
+                                    Showing <span class="font-semibold text-green-600">${filteredBalls.length}</span> of ${golfBalls.length} balls
+                                </div>
+                                <button id="reset-filters" class="text-sm font-medium ${textSecondary} hover:text-green-600 transition-colors">
+                                    Reset filters
+                                </button>
+                            </div>
+                        </div>
+
+                        ${filteredBalls.length === 0 ? `
+                            <div class="text-center py-16 ${cardBg} rounded-2xl shadow-lg">
+                                <div class="text-6xl mb-4">🔍</div>
+                                <h3 class="text-xl font-semibold ${textPrimary} mb-2">No matches found</h3>
+                                <p class="${textSecondary} mb-6">Try adjusting your filters to see more options</p>
+                                <button id="reset-filters-empty" class="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                                    Reset All Filters
+                                </button>
+                            </div>
+                        ` : `
+                            <div class="${cardBg} rounded-2xl shadow-lg overflow-hidden border">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full">
+                                        <thead class="${darkMode ? 'bg-gray-700' : 'bg-gray-50'}">
+                                            <tr>
+                                                <th class="sortable px-6 py-3 text-left text-xs font-medium ${textTertiary} uppercase tracking-wider" data-column="brand">
+                                                    Brand & Model ${getSortIcon('brand')}
+                                                </th>
+                                                <th class="sortable px-6 py-3 text-left text-xs font-medium ${textTertiary} uppercase tracking-wider" data-column="pricePerDozen">
+                                                    Price ${getSortIcon('pricePerDozen')}
+                                                </th>
+                                                <th class="sortable px-6 py-3 text-left text-xs font-medium ${textTertiary} uppercase tracking-wider" data-column="construction">
+                                                    Construction ${getSortIcon('construction')}
+                                                </th>
+                                                <th class="sortable px-6 py-3 text-left text-xs font-medium ${textTertiary} uppercase tracking-wider" data-column="cover">
+                                                    Cover ${getSortIcon('cover')}
+                                                </th>
+                                                <th class="sortable px-6 py-3 text-left text-xs font-medium ${textTertiary} uppercase tracking-wider" data-column="compression">
+                                                    Compression ${getSortIcon('compression')}
+                                                </th>
+                                                <th class="sortable px-6 py-3 text-left text-xs font-medium ${textTertiary} uppercase tracking-wider" data-column="spinLevel">
+                                                    Spin ${getSortIcon('spinLevel')}
+                                                </th>
+                                                <th class="sortable px-6 py-3 text-left text-xs font-medium ${textTertiary} uppercase tracking-wider" data-column="feel">
+                                                    Feel ${getSortIcon('feel')}
+                                                </th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium ${textTertiary} uppercase tracking-wider">
+                                                    Best For
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y ${tableBorder}">
+                                            ${filteredBalls.map(ball => `
+                                                <tr class="${tableRowHover} transition-colors">
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="flex flex-col">
+                                                            <div class="text-sm font-bold ${textPrimary}">${ball.brand}</div>
+                                                            <div class="text-sm ${textSecondary}">${ball.model}</div>
+                                                            ${ball.sliceFriendly ? `<span class="text-xs text-blue-600 mt-1">📈 Slice-friendly</span>` : ''}
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="text-sm font-semibold ${textPrimary}">$${ball.pricePerDozen}</div>
+                                                        <div class="text-xs ${textTertiary}">per dozen</div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="text-sm ${textSecondary}">${ball.construction}</div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="text-sm ${textSecondary}">${ball.cover}</div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="text-sm font-semibold ${textPrimary}">${ball.compression}</div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <span class="text-sm font-semibold ${getSpinColor(ball.spinLevel, darkMode)}">${ball.spinLevel}</span>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="text-sm ${textSecondary}">${ball.feel}</div>
+                                                    </td>
+                                                    <td class="px-6 py-4">
+                                                        <div class="flex flex-wrap gap-1">
+                                                            ${ball.bestFor.map(feature => `
+                                                                <span class="inline-block px-2 py-1 text-xs font-medium rounded ${
+                                                                    darkMode 
+                                                                        ? 'bg-gray-700 text-gray-300' 
+                                                                        : 'bg-gray-100 text-gray-700'
+                                                                }">${feature}</span>
+                                                            `).join('')}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `}
+
+                        <div class="mt-12 ${cardBg} rounded-2xl shadow-lg p-8 border">
+                            <h2 class="text-2xl font-bold ${textPrimary} mb-6">Understanding Golf Ball Specs</h2>
+                            <div class="grid md:grid-cols-2 gap-6 text-sm">
+                                <div>
+                                    <h3 class="font-semibold ${textPrimary} mb-2 flex items-center gap-2">
+                                        <span>⚡</span>
+                                        Compression
+                                    </h3>
+                                    <p class="${textSecondary}">Lower compression (40-70) suits slower swing speeds, while higher compression (80-100) is for faster swingers. It affects feel and distance.</p>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold ${textPrimary} mb-2 flex items-center gap-2">
+                                        <span>📉</span>
+                                        Spin Level
+                                    </h3>
+                                    <p class="${textSecondary}">High spin gives more control and stopping power on greens but can exaggerate hooks/slices. Low spin promotes straighter, longer shots.</p>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold ${textPrimary} mb-2">Construction</h3>
+                                    <p class="${textSecondary}">2-piece balls prioritize distance and durability. 3+ piece balls offer more control and spin for skilled players.</p>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold ${textPrimary} mb-2">Cover Material</h3>
+                                    <p class="${textSecondary}">Urethane covers provide more spin and feel but wear faster. Ionomer/Surlyn covers are more durable and affordable.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('app').innerHTML = html;
+            attachEventListeners();
+        }
+
+        function attachEventListeners() {
+            document.getElementById('theme-toggle').addEventListener('click', () => {
+                state.darkMode = !state.darkMode;
+                render();
+            });
+
+            document.getElementById('swing-speed').addEventListener('change', (e) => {
+                state.swingSpeed = e.target.value;
+                render();
+            });
+
+            document.getElementById('handicap').addEventListener('change', (e) => {
+                state.handicap = e.target.value;
+                render();
+            });
+
+            document.getElementById('has-slice').addEventListener('change', (e) => {
+                state.hasSlice = e.target.checked;
+                render();
+            });
+
+            document.getElementById('price-min').addEventListener('input', (e) => {
+                const newMin = Math.min(Number(e.target.value), state.priceRange[1] - 5);
+                state.priceRange[0] = newMin;
+                render();
+            });
+
+            document.getElementById('price-max').addEventListener('input', (e) => {
+                const newMax = Math.max(Number(e.target.value), state.priceRange[0] + 5);
+                state.priceRange[1] = newMax;
+                render();
+            });
+
+            const compressions = golfBalls.map(b => b.compression);
+            const minCompression = Math.min(...compressions);
+            const maxCompression = Math.max(...compressions);
+
+            document.getElementById('compression-min').addEventListener('input', (e) => {
+                const newMin = Math.min(Number(e.target.value), state.compressionRange[1] - 5);
+                state.compressionRange[0] = newMin;
+                render();
+            });
+
+            document.getElementById('compression-max').addEventListener('input', (e) => {
+                const newMax = Math.max(Number(e.target.value), state.compressionRange[0] + 5);
+                state.compressionRange[1] = newMax;
+                render();
+            });
+
+            // Sortable columns
+            document.querySelectorAll('.sortable').forEach(th => {
+                th.addEventListener('click', () => {
+                    toggleSort(th.dataset.column);
+                });
+            });
+
+            const resetButtons = document.querySelectorAll('#reset-filters, #reset-filters-empty');
+            resetButtons.forEach(btn => {
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        const compressions = golfBalls.map(b => b.compression);
+                        state = {
+                            swingSpeed: '',
+                            handicap: '',
+                            hasSlice: false,
+                            priceRange: [10, 60],
+                            compressionRange: [Math.min(...compressions), Math.max(...compressions)],
+                            sortColumn: null,
+                            sortDirection: 'asc',
+                            darkMode: state.darkMode
+                        };
+                        render();
+                    });
+                }
+            });
+        }
+
+        // Listen for system theme changes
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                state.darkMode = e.matches;
+                render();
+            });
+        }
+
+        // Load data on page load
+        initializeData();
+    </script>
+</body>
+</html>
